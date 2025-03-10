@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  nginx:
+    build:
+      context: ./nginx/.
+    container_name: nginx
+    hostname: nginx-test 
+    restart: always
+    tty: true
+    privileged: true
+    networks:
+      - app_network
+    depends_on:
+      - php
+    ports:
+      - "8087:80"
+      - "4432:443"
+    volumes:
+      - ./nginx/opt/nginx/conf:/opt/nginx/conf
+      - ./dataweb:/data/project
+
+  jenkins:
+    build:
+      context: ./jenkins/.
+    container_name: jenkins
+    hostname: jenjen
+    restart: always
+    tty: true
+    privileged: true
+    networks:
+      - app_network
+    ports:
+      - "8888:8080"
+      - "50000:50000"
+    volumes:
+      - ./jenkins/jenkins_home:/var/jenkins_home
+      # - /Users/rizky/.docker/run/docker.sock:/var/run/docker.sock  # Allows Jenkins to interact with Docker
+    environment:
+      - DOCKER_TLS_CERTDIR=/certs
+
+  # volumes:
+  #   jenkins_home:
+
+  nginx_unit:
+   build:
+      context: ./nginx_unit/.  # Gunakan image resmi NGINX Unit
+   container_name: nginx_unit
+   restart: always
+   networks:
+     - app_network
+   depends_on:
+     - php
+   ports:
+     - "8080:8080"  # NGINX Unit akan mendengarkan di port 8080
+     - "8081:8081"  # NGINX Unit akan mendengarkan di port 8080
+   volumes:
+     - ./nginx_unit/conf/config.json:/etc/unit/config.json  # Salin konfigurasi Unit
+     - ./dataweb:/data/project
+   #command: curl -X PUT --unix-socket /var/run/control.unit.sock -d @/etc/unit/config.json http://localhost:8080/config
+
+  php:
+    build:
+      context: ./php/.
+    container_name: php82
+    hostname: php82 
+    restart: always
+    tty: true
+    privileged: true
+    networks:
+      - app_network
+    ports:
+      - "9000:9000"
+    volumes:
+      - ./dataweb:/data/project
+
+networks:
+  app_network:
+    driver: bridge

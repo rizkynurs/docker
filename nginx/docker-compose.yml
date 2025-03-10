@@ -1,0 +1,17 @@
+version: '3.8'
+services:
+  nginx:
+    build:
+      context: .
+    container_name: nginx
+    hostname: nginx05 
+    restart: always
+    tty: true
+    privileged: true
+    ports:
+      - "8087:80"
+      - "4432:443"
+    volumes:
+      - ./opt/nginx/conf:/opt/nginx/conf
+      - ../dataweb:/data/project
+      # - ./config/telegraf.conf:/etc/telegraf/telegraf.conf

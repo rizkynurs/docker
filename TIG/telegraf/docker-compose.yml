@@ -1,0 +1,10 @@
+version: '3.6'
+services:
+  telegraf:
+    image: telegraf
+    container_name: telegraf
+    restart: always
+    volumes:
+    - ./telegraf.conf:/etc/telegraf/telegraf.conf
+    ports:
+    - '8125:8125'
