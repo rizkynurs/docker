@@ -1,0 +1,83 @@
+---
+# Handler to handle common notifications. Handlers are called by other plays.
+# See http://docs.ansible.com/playbooks_intro.html for more information about handlers.
+
+- name: Update all packages
+  ansible.builtin.yum:
+    name: '*'
+    state: latest
+
+- name: Install Prerequisite
+  become: true
+  ansible.builtin.yum:
+    pkg: "{{ item }}"
+    state: present
+  with_items: 
+    - vim
+    - nano
+    - nc 
+    - telnet
+    - epel-release
+    - wget
+    - mariadb-devel
+    - python3
+    - python3-devel
+    - bzip2-devel 
+    - postgresql-devel
+    - bind-utils
+    - libffi-devel
+    - git 
+    - gcc
+    - net-tools 
+    - curl
+    - pcre
+    - mtr
+    - pcre-devel 
+    - libxml2
+    - htop
+    - libxml2-devel
+    - libjpeg-devel
+    - libpng-devel
+    - libXpm-devel
+    - libmcrypt-devel
+    - postgresql-devel
+    - iproute
+    - curl-devel
+    - openssh-clients 
+    - ntpdate
+    - geoip-devel
+    - cronie
+    - cmake
+    - geoip 
+    - zlib-devel
+    - make
+    - openssl
+    - openssl-devel
+    - davfs2
+    - lua-devel
+    - cyrus-sasl-devel
+    - autoconf
+    - bison
+    - flex
+    - re2c
+    - supervisor
+
+- name: Ensure group "detik" exists with correct gid
+  ansible.builtin.group:
+    name: detik
+    state: present
+    gid: 500
+
+- name: Ensure user "detik" exists with correct uid
+  ansible.builtin.user:
+    name: detik
+    state: present
+    uid: 500
+    create_home: true
+    group: detik
+
+- name: Start and enable for supervisor
+  ansible.builtin.systemd_service:
+    name: supervisord
+    state: started
+    enabled: true

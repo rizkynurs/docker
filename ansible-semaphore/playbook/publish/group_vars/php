@@ -1,0 +1,25 @@
+php_version: "8.3.11"
+redis_version: "6.0.2"
+php_source_url: "https://www.php.net/distributions/php-{{ php_version }}.tar.gz"
+redis_source_url: "https://pecl.php.net/get/redis-{{ redis_version }}.tgz"
+php_gd: "--with-gd --with-jpeg-dir=/usr/lib64 --with-png-dir=/usr/lib64/ --with-xpm-dir=/usr/lib64/ --with-freetype-dir"
+phalcon_version: "5.8.0"
+php_path: /opt/php83
+php_soap: --enable-soap
+php_libxml: --enable-libxml 
+php_xml: --enable-xml  
+php_json: --enable-json 
+php_hash: --enable-hash 
+php_cli: --enable-cli 
+php_with: --with-libdir=/usr/lib64/ --with-iconv --with-zip --with-json --with-mysqli --with-libxml --with-webp --with-hash --with-pcre-regex --with-pear --with-zlib --with-openssl --with-curl --with-opcache
+php_disable: --disable-all 
+php_enable: --enable-gd=/usr/lib64/ --enable-fpm --enable-dom --enable-xmlreader --enable-zip --enable-ftp --enable-pcre-regex --enable-bcmath --enable-ctype --enable-fileinfo --enable-filter --enable-simplexml --enable-mbstring --enable-sysvshm --enable-sockets --enable-session --enable-phar
+php_db: --enable-mysqlnd --with-pdo-mysql --with-pdo-pgsql --with-pgsql --enable-pdo
+php_libdir: "--with-libdir=/lib64"
+php_install_dir: "/root/sources/php-{{ php_version }}"
+redis_install_dir: "/root/sources/redis-{{ redis_version }}"
+supervisor_php: /Users/detikcom/Documents/Repodetik/ansible-semaphore/playbook/publish/php/templates/php-supervisor.ini.j2
+php_ini_dir: /Users/detikcom/Documents/Repodetik/ansible-semaphore/playbook/publish/php/templates/php.ini.j2
+php_fpm_dir: /Users/detikcom/Documents/Repodetik/ansible-semaphore/playbook/publish/php/templates/php-fpm.conf.j2
+phalcon_install_dir: /root/sources/cphalcon/build
+php_opcache_dir: /root/sources/php-8.3.11/ext/opcache

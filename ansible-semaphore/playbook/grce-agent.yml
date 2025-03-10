@@ -1,0 +1,37 @@
+---
+- name: grce-agent
+  hosts: grce
+  tasks:
+  - name: setup python env
+    shell: |
+      python3 -m venv /opt/grce-agents
+      cd /opt/grce-agents
+      git clone https://gitlab-ci-token:TTgyKznV6yxy1Y3_8zFx@git-sysnet.detik.com/sysnet/grce/grce-agent.git apps
+      source /opt/grce-agents/bin/activate
+      cd /opt/grce-agents/apps/
+      pip3 install -r requirement.txt
+
+  - name: setup protobuf
+    shell: |
+      source /opt/grce-agents/bin/activate
+      cd /tmp/
+      git clone https://gitlab-ci-token:TTgyKznV6yxy1Y3_8zFx@git-sysnet.detik.com/sysnet/grce/grce-tools.git
+      cd /tmp/grce-tools/proto3
+      python3 generate.py
+
+  - name: copy ssl
+    shell: |
+      cp /tmp/grce-tools/ssl/server-key.pem /opt/grce-agents/apps/credentials/server-key.pem
+      cp /tmp/grce-tools/ssl/server-cert.pem /opt/grce-agents/apps/credentials/server-cert.pem
+      cp /tmp/grce-tools/ssl/ca.pem /opt/grce-agents/apps/credentials/ca.pem
+
+  - name: setup services systemd
+    shell: |
+      cp /opt/grce-agents/apps/services/systemd/grce-agent.service /usr/lib/systemd/system/grce-agent.service
+      systemctl daemon-reload
+      systemctl restart grce-agent
+      systemctl enable grce-agent
+
+  - name: clean config
+    shell: |
+      rm -rf /tmp/grce-tools

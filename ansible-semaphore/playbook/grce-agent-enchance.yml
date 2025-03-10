@@ -1,0 +1,70 @@
+---
+# define this vars to semaphore: grce_agent_path, gitlab_token
+- name: Deploy Grce Agent
+  hosts: grce
+
+  tasks:
+    - name: Ensure Grce Agent directory exists
+      file:
+        path: "{{ grce_agent_path }}"
+        state: directory
+
+    - name: Set up Python virtual environment
+      command: python3 -m venv "{{ grce_agent_path }}"
+      args:
+        creates: "{{ grce_agent_path }}/bin/activate"
+
+    - name: Clone Grce Agent repository
+      git:
+        repo: "https://gitlab-ci-token:{{ gitlab_token }}@git-sysnet.detik.com/sysnet/grce/grce-agent.git"
+        dest: "{{ grce_agent_path }}/apps"
+        version: "master"
+        update: yes
+
+    - name: Install Python dependencies
+      pip:
+        requirements: "{{ grce_agent_path }}/apps/requirement.txt"
+        virtualenv: "{{ grce_agent_path }}"
+        virtualenv_command: "source {{ grce_agent_path }}/bin/activate && python3 -m venv"
+
+    - name: Clone Grce Tools repository for Protobuf setup
+      git:
+        repo: "https://gitlab-ci-token:{{ gitlab_token }}@git-sysnet.detik.com/sysnet/grce/grce-tools.git"
+        dest: /tmp/grce-tools
+        version: "master"
+        update: yes
+
+    - name: Run Protobuf generation
+      command: "source {{ grce_agent_path }}/bin/activate && python3 generate.py"
+      args:
+        chdir: /tmp/grce-tools/proto3
+
+    - name: Copy SSL certificates
+      copy:
+        src: "/tmp/grce-tools/ssl/{{ item }}"
+        dest: "{{ grce_agent_path }}/apps/credentials/{{ item }}"
+        owner: detik
+        group: detik
+        mode: '0644'
+      loop:
+        - server-key.pem
+        - server-cert.pem
+        - ca.pem
+
+    - name: Set up systemd service for Grce Agent
+      copy:
+        src: "{{ grce_agent_path }}/apps/services/systemd/grce-agent.service"
+        dest: /usr/lib/systemd/system/grce-agent.service
+        mode: '0644'
+
+    - name: Reload systemd and restart Grce Agent service
+      systemd:
+        name: grce-agent
+        daemon_reload: yes
+        state: restarted
+        enabled: yes
+
+    - name: Clean up temporary Grce Tools directory
+      file:
+        path: /tmp/grce-tools
+        state: absent

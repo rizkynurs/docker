@@ -1,0 +1,12 @@
+---
+# This playbook deploys the whole application stack in this site.
+
+- name: apply common configuration to all nodes
+  hosts: publish
+  remote_user: root
+
+  vars_files:
+  - group_vars/php
+
+  roles:
+    - php

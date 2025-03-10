@@ -1,0 +1,91 @@
+---
+- name: Pre-installation Tasks
+  hosts: preinstall
+  tasks:
+    - name: Update all packages to the latest version
+      yum:
+        name: '*'
+        state: latest
+
+    - name: Install Development Tools group
+      yum:
+        name: "@Development Tools"
+        state: present
+
+    - name: Install additional packages
+      yum:
+        name:
+          - vim
+          - net-tools
+          - bind-utils
+          - telnet
+          - autoconf
+          - wget
+          - net-snmp
+          - yum-utils
+          - mariadb-devel
+          - python3
+          - python3-devel
+          - bzip2-devel
+          - postgresql-devel
+          - libffi-devel
+          - git
+          - gcc
+          - curl
+          - pcre
+          - mtr
+          - pcre-devel
+          - libxml2
+          - htop
+          - libxml2-devel
+          - curl-devel
+          - GeoIP-devel
+          - libmaxminddb-devel
+          - cmake
+          - zlib-devel
+          - make
+          - openssl-devel
+          - davfs2
+          - lua-devel
+        state: present
+
+    - name: Set timezone to Asia/Jakarta
+      timezone:
+        name: Asia/Jakarta
+
+    - name: Install EPEL release and Supervisor
+      yum:
+        name:
+          - epel-release
+          - supervisor
+        state: present
+
+    - name: Add 'LimitNOFILE=65535' to supervisord service file
+      lineinfile:
+        path: /usr/lib/systemd/system/supervisord.service
+        insertafter: '^Type=forking'
+        line: 'LimitNOFILE=65535'
+        backup: yes
+
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: yes
+
+    - name: Enable and restart supervisord service
+      systemd:
+        name: supervisord
+        state: restarted
+        enabled: yes
+
+    - name: Make sure 'detik' group exists with GID 500
+      group:
+        name: detik
+        gid: 500
+        state: present
+
+    - name: Make sure 'detik' user exists with UID 500
+      user:
+        name: detik
+        uid: 500
+        group: detik
+        state: present

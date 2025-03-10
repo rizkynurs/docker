@@ -1,0 +1,16 @@
+---
+
+- name: Clone a repo project detik-vertical
+  ansible.builtin.git:
+    repo: "http://gitlab-ci-token:{{ git_token }}@git-jenkins.detik.com/detik-vertical/detik-vertical.git"
+    dest: /data/gitlabproject/detik-vertical
+
+- name: Clone a repo project Detik
+  ansible.builtin.git:
+    repo: "http://gitlab-ci-token:{{ git_token }}@git-jenkins.detik.com/ITProduct/Detik.git"
+    dest: /data/gitlabproject/Detik
+
+- name: Clone a repo project detikconnect-php
+  ansible.builtin.git:
+    repo: "http://gitlab-ci-token:{{ git_token }}@git-jenkins.detik.com/data-core/core-service/detikconnect-sdk/detikconnect-php.git"
+    dest: /data/gitlabproject/detikconnect-php

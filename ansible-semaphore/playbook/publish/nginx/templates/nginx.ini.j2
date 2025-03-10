@@ -1,0 +1,21 @@
+[program:nginx]
+command=/opt/nginx/sbin/nginx -c /opt/nginx/conf/nginx.conf
+process_name=%(program_name)s
+numprocs=1
+directory=/opt/nginx/conf
+umask=022
+priority=1
+autostart=true
+autorestart=true
+startsecs=1
+startretries=1
+exitcodes=0,2
+stopsignal=TERM
+stopwaitsecs=5
+serverurl=AUTO
+redirect_stderr=true
+stdout_logfile=/var/log/supervisor/nginx.log
+stderr_logfile=/var/log/supervisor/nginx-err.log
+stdout_logfile_maxbytes=1MB
+stdout_logfile_backups=10
+stdout_capture_maxbytes=1MB

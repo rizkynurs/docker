@@ -1,0 +1,12 @@
+---
+- name: HSS AGENT
+  hosts: hssagent
+  tasks:
+  - name: Install
+    shell: |
+      curl -k -O 'https://hostguard.hss.ap-southeast-4.myhuaweicloud.com:10180/package/agent/linux/install/agent_Install.sh'
+      echo 'MASTER_IP=hostguard.hss.ap-southeast-4.myhuaweicloud.com:10180' > hostguard_setup_config.conf
+      echo 'SLAVE_IP=hostguard-slave.hss.ap-southeast-4.myhuaweicloud.com:10180' >> hostguard_setup_config.conf
+      echo 'ORG_ID=Zip4' >> hostguard_setup_config.conf
+      bash agent_Install.sh
+      rm -f agent_Install.sh

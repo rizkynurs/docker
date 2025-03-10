@@ -1,0 +1,104 @@
+---
+
+- name: Compile NGINX from sources
+  hosts: webserver
+  vars:
+    nginx_version: nginx-1.24.0
+    nginx_tarball_url: "http://nginx.org/download/{{ nginx_version }}.tar.gz"
+    nginx_install_dir: "/home/client01/sources/{{ nginx_version }}"
+    nginx_path: /opt/nginx
+    purge_cache: --add-module=/home/client01/sources/ngx_cache_purge
+    moreset_header: --add-module=/home/client01/sources/headers-more-nginx-module
+    push_stream: --add-module=/home/client01/sources/nginx-push-stream-module
+    cookie_flag: --add-module=/home/client01/sources/nginx_cookie_flag_module
+    default_module : --with-http_v2_module --with-ipv6 --with-http_stub_status_module --with-http_dav_module --with-file-aio --with-threads --with-http_realip_module
+    
+  tasks:
+  - name: Installing NGINX Dependencies
+    become: yes
+    ansible.builtin.apt:
+      pkg: "{{ item }}"
+      state: present
+    with_items:
+      - screen
+      - ntpdate
+      - vim
+      - nano
+      - wget
+      - git
+      - gcc
+      - net-tools
+      - iproute2
+      - openssh-client-ssh1
+      - ntpdate
+      - libgeoip-dev
+      - libpcre3-dev
+      - zlib1g-dev
+      - make
+      - openssl
+      - davfs2
+      - liblua5.3-dev
+      - supervisor
+
+  - name: Creates directory
+    ansible.builtin.file:
+      path: /home/client01/sources/
+      state: directory
+
+  - name: Downloading NGINX sources
+    get_url:
+      url: "{{ nginx_tarball_url }}"
+      dest: "/home/client01/sources/{{ nginx_version }}.tar.gz"
+    register: nginx_source
+
+  - name: Clone a repo headers-more-nginx-module
+    ansible.builtin.git:
+      repo: "https://github.com/openresty/headers-more-nginx-module.git"
+      dest: /home/client01/sources/headers-more-nginx-module
+  
+  - name: Clone a repo http-lower-upper-case
+    ansible.builtin.git:
+      repo: "https://github.com/replay/ngx_http_lower_upper_case.git"
+      dest: /home/client01/sources/ngx_http_lower_upper_case
+  
+  - name: Clone a repo ngx-cache-purge module
+    ansible.builtin.git:
+      repo: "https://github.com/FRiCKLE/ngx_cache_purge.git"
+      dest: /home/client01/sources/ngx_cache_purge
+  
+  - name: Clone a repo nginx-push-stream-module module
+    ansible.builtin.git:
+      repo: "https://github.com/wandenberg/nginx-push-stream-module.git"
+      dest: /home/client01/sources/nginx-push-stream-module
+  
+  - name: Clone a repo cookie-flag module
+    ansible.builtin.git:
+      repo: "https://github.com/AirisX/nginx_cookie_flag_module.git"
+      dest: /home/client01/sources/nginx_cookie_flag_module
+    
+  - name: Unpacking NGINX
+    ansible.builtin.unarchive:
+      copy: no
+      src: /home/client01/sources/nginx-1.24.0.tar.gz
+      dest: /home/client01/sources/
+    register: nginx_source_unpack
+
+  - name: Configuring NGINX source with custom modules
+    command: "./configure --prefix={{ nginx_path }} {{ default_module }} {{ purge_cache }} {{ moreset_header }} {{ push_stream }} {{ cookie_flag }}"
+    args:
+      chdir: "{{ nginx_install_dir }}"
+    when: nginx_source_unpack.changed
+    register: nginx_configure
+   
+  - name: Installing NGINX
+    become: yes
+    shell: make && make install
+    args:
+      chdir: "{{ nginx_install_dir }}"
+    when: nginx_source_unpack.changed
+  
+
+  - name: Clone a repo nginx publish
+    ansible.builtin.git:
+      repo: "https://git-sysnet.detik.com/sysnet/nginx/publish-huawei.git"
+      dest: /opt/nginx/

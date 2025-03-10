@@ -1,0 +1,145 @@
+---
+# Handler to handle common notifications. Handlers are called by other plays.
+# See http://docs.ansible.com/playbooks_intro.html for more information about handlers.
+
+- name: Creates directory
+  ansible.builtin.file:
+    path: /root/sources/
+    state: directory
+
+- name: Downloading PHP sources
+  get_url:
+      url: "{{ php_source_url }}"
+      dest: "/root/sources/php-{{ php_version }}.tar.gz"
+  register: php_source
+    
+- name: Unpacking PHP
+  ansible.builtin.unarchive:
+    copy: no
+    src: /root/sources/php-8.3.11.tar.gz
+    dest: /root/sources/
+  register: php_source_unpack
+
+- name: Configuring PHP source with custom modules
+  command: "./configure --prefix={{ php_path }} {{ php_cli }} {{ php_hash }} {{ php_json }} {{ php_xml }} {{ php_libxml }} {{ php_soap }} {{ php_db }} {{ php_enable }} {{ php_with }}"
+  args:
+    chdir: "{{ php_install_dir }}"
+  when: php_source_unpack.changed
+  register: php_configure
+   
+- name: Installing PHP
+  shell: make && make install
+  args:
+    chdir: "{{ php_install_dir }}"
+  when: php_source_unpack.changed
+
+- name: Downloading Redis Module
+  get_url:
+      url: "{{ redis_source_url }}"
+      dest: "/root/sources/redis-{{ redis_version }}.tar.gz"
+  register: redis_source
+    
+- name: Unpacking Redis Module
+  ansible.builtin.unarchive:
+    copy: no
+    src: /root/sources/redis-6.0.2.tar.gz
+    dest: /root/sources/
+  register: redis_source_unpack
+
+- name: Configuring redis modules from source
+  shell: "/opt/php83/bin/phpize ."
+  args:
+    chdir: "{{ redis_install_dir }}"
+  when: redis_source_unpack.changed
+
+- name: Configuring redis modules from source
+  shell: "./configure --with-php-config=/opt/php83/bin/php-config"
+  args:
+    chdir: "{{ redis_install_dir }}"
+  when: redis_source_unpack.changed
+   
+- name: Installing Redis Modules
+  shell: "make && make install"
+  args:
+    chdir: "{{ redis_install_dir }}"
+  when: redis_source_unpack.changed
+  
+- name: Change file ownership, group and recursive
+  ansible.builtin.file:
+    path: /opt/php83/var/
+    owner: detik
+    group: detik
+    recurse: true
+
+- name: Clone a repo phalcon
+  ansible.builtin.git:
+    repo: "https://github.com/phalcon/cphalcon.git"
+    version: "v5.8.0"
+    dest: /root/sources/cphalcon
+  register: download_phalcon
+
+- name: Configuring php source with phalcon modules
+  shell: "./install --phpize /opt/php83/bin/phpize --php-config /opt/php83/bin/php-config"
+  args:
+      chdir: "{{ phalcon_install_dir }}"
+  when: download_phalcon.changed
+  register: phalcon_configure
+
+- name: Configuring opcache modules from source
+  shell: "/opt/php83/bin/phpize ."
+  args:
+    chdir: "{{ php_opcache_dir }}"
+  when: phalcon_configure.changed
+
+- name: Configuring php source with opcache modules
+  shell: "./configure --with-php-config=/opt/php/bin/php-config"
+  args:
+      chdir: "{{ php_opcache_dir }}"
+  when: phalcon_configure.changed
+
+- name: Installing opcache Modules
+  shell: "make && make install"
+  args:
+    chdir: "{{ php_opcache_dir }}"
+  when: phalcon_configure.changed
+
+- name: Give insecure permissions to an existing file
+  ansible.builtin.file:
+    path: /var/log/php83
+    state: directory
+    owner: detik
+    group: detik
+    recurse: true
+
+- name: Template a file to /etc/supervisord.d/ folder
+  ansible.builtin.template:
+    src: "{{ supervisor_php }}"
+    dest: /etc/supervisord.d/php83.ini
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Template a file to php fpm folder
+  ansible.builtin.template:
+    src: "{{ php_fpm_dir }}"
+    dest: /opt/php83/etc/php-fpm.conf
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Template a file to lib php folder
+  ansible.builtin.template:
+    src: "{{ php_ini_dir }}"
+    dest: /opt/php83/lib/php.ini
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Manage the state of program to be in started state
+  community.general.supervisorctl:
+    name: php83
+    state: restarted
+
+- name: Restart PHP supervisor
+  command: echo "this task will restart php services"
+  notify: restart php83

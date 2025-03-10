@@ -1,0 +1,13 @@
+---
+- name: Disable Agent Wazuh and Aegis
+  hosts: wazuhaegis
+  tasks:
+  - name: Disable Wazuh
+    shell: |
+      systemctl stop wazuh-agent
+      systemctl disable wazuh-agent
+
+  - name: Disable Aegis
+    shell: |
+      systemctl stop aegis
+      systemctl disable aegis

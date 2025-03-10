@@ -1,0 +1,27 @@
+---
+- name: preinstall
+  hosts: preinstall
+  tasks:
+  - name: Install Development Tools
+    shell: |
+      yum update -y
+      yum groupinstall 'Development Tools' -y
+      yum -y install vim net-tools bind-utils telnet autoconf wget net-snmp yum-utils mariadb-devel python3 python3-devel bzip2-devel postgresql-devel libffi-devel git gcc curl pcre mtr pcre-devel libxml2 htop libxml2-devel curl-devel GeoIP-devel libmaxminddb-devel cmake zlib-devel make openssl-devel davfs2 lua-devel
+
+  - name: Calibrate Timezone
+    shell: |
+      rm -rf /etc/localtime ; ln -s /usr/share/zoneinfo/Asia/Jakarta /etc/localtime
+
+  - name: Install Supervisor
+    shell: |
+      yum install epel-release supervisor -y
+      sed -i '/Type\=forking/a LimitNOFILE\=65535' /usr/lib/systemd/system/supervisord.service
+      systemctl enable supervisord ; systemctl restart supervisord
+
+  - name: Add user detik
+    shell: |
+      if id -u "detik" >/dev/null 2>&1; then
+         echo 'user exists'
+      else
+         groupadd detik -g 500; useradd -g 500 -u 500 detik
+      fi

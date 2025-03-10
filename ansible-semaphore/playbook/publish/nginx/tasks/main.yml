@@ -1,0 +1,89 @@
+---
+# Handler to handle common notifications. Handlers are called by other plays.
+# See http://docs.ansible.com/playbooks_intro.html for more information about handlers.
+
+- name: Creates directory
+  ansible.builtin.file:
+    path: /root/sources/
+    state: directory
+
+- name: Downloading NGINX sources
+  get_url:
+      url: "{{ nginx_tarball_url }}"
+      dest: "/root/sources/{{ nginx_version }}.tar.gz"
+  register: nginx_source
+
+- name: Clone a repo headers-more-nginx-module
+  ansible.builtin.git:
+    repo: "https://github.com/openresty/headers-more-nginx-module.git"
+    dest: /root/sources/headers-more-nginx-module
+
+- name: Clone a repo http-lower-upper-case
+  ansible.builtin.git:
+    repo: "https://github.com/replay/ngx_http_lower_upper_case.git"
+    dest: /root/sources/ngx_http_lower_upper_case
+  
+- name: Clone a repo ngx-cache-purge module
+  ansible.builtin.git:
+    repo: "https://github.com/FRiCKLE/ngx_cache_purge.git"
+    dest: /root/sources/ngx_cache_purge
+  
+- name: Clone a repo nginx-push-stream-module module
+  ansible.builtin.git:
+    repo: "https://github.com/wandenberg/nginx-push-stream-module.git"
+    dest: /root/sources/nginx-push-stream-module
+  
+- name: Clone a repo cookie-flag module
+  ansible.builtin.git:
+    repo: "https://github.com/AirisX/nginx_cookie_flag_module.git"
+    dest: /root/sources/nginx_cookie_flag_module
+    
+- name: Unpacking NGINX
+  ansible.builtin.unarchive:
+    copy: no
+    src: /root/sources/nginx-1.24.0.tar.gz
+    dest: /root/sources/
+  register: nginx_source_unpack
+
+- name: Configuring NGINX source with custom modules
+  command: "./configure --prefix={{ nginx_path }} {{ default_module }} {{ purge_cache }} {{ moreset_header }} {{ push_stream }} {{ cookie_flag }}"
+  args:
+    chdir: "{{ nginx_install_dir }}"
+  when: nginx_source_unpack.changed
+  register: nginx_configure
+   
+- name: Installing NGINX
+  shell: make && make install
+  args:
+    chdir: "{{ nginx_install_dir }}"
+  when: nginx_source_unpack.changed
+  
+- name: Delete content & directory
+  ansible.builtin.file:
+    state: absent
+    path: /opt/nginx/conf
+
+- name: Clone a repo nginx publish
+  ansible.builtin.git:
+    repo: "https://gitlab-ci-token:TTgyKznV6yxy1Y3_8zFx@git-sysnet.detik.com/sysnet/nginx/publish-huawei.git"
+    dest: /opt/nginx/conf/
+  
+- name: Give insecure permissions to an existing folder
+  ansible.builtin.file:
+    path: /data/project/
+    state: directory
+    owner: detik
+    group: detik
+    recurse: yes
+
+- name: Template a file to /etc/supervisord.d/ folder
+  ansible.builtin.template:
+    src: "{{ supervisor_nginx }}"
+    dest: /etc/supervisord.d/nginx.ini
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Restart Nginx supervisor
+  command: echo "this task will restart the web services"
+  notify: restart nginx
