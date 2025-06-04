@@ -1,0 +1,14 @@
+---
+- name: Cachetool
+  hosts: cachetool
+  tasks:
+  - name: Download & Install
+    shell: |
+      mkdir -p /tmp/download ; cd /tmp/download
+      curl -sO https://gordalina.github.io/cachetool/downloads/cachetool-{{ cachetool_version }}.phar
+      chmod +x cachetool-{{ cachetool_version }}.phar
+      mv cachetool-{{ cachetool_version }}.phar /usr/local/bin/cachetool.phar
+
+  - name: Clean
+    shell: |
+      rm -rf /tmp/download

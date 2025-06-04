@@ -1,0 +1,8 @@
+---
+- name: Demo Whoami
+  hosts: demo
+  tasks:
+  - name: Demo Whoami
+    shell: |
+      whoami
+      echo "$whoami"

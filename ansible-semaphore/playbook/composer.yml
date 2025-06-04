@@ -1,0 +1,14 @@
+---
+- name: Composer
+  hosts: composer
+  tasks:
+  - name: Download & Install
+    shell: |
+      mkdir -p /tmp/download ; cd /tmp/download
+      wget https://getcomposer.org/download/{{ composer_version }}/composer.phar
+      chmod +x composer.phar
+      mv composer.phar /usr/local/bin/composer
+
+  - name: Clean
+    shell: |
+      rm -rf /tmp/download

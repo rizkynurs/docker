@@ -1,0 +1,19 @@
+---
+- name: Fluentbit
+  hosts: fluentbit
+  tasks:
+  - name: Download & Install
+    shell: |
+      mkdir -p /tmp/download ; cd /tmp/download
+      git clone http://gitlab-ci-token:{{ git_token }}@{{ git_repo }};
+      rm -rf script/.git
+      cd script
+      chmod +x install-fl.sh
+      /usr/bin/sh install-fl.sh
+
+  - name: Add & Start Service
+    shell: |
+      sed -i '/Restart\=always/a LimitNOFILE\=65535' /usr/lib/systemd/system/fluent-bit.service
+      systemctl daemon-reload
+      systemctl enable fluent-bit.service
+      rm -rf /tmp/download/script

@@ -1,0 +1,32 @@
+---
+- name: Promtail
+  hosts: promtail
+  tasks:
+  - name: Download & Install
+    shell: |
+      mkdir -p /tmp/download ; cd /tmp/download
+      git clone http://gitlab-ci-token:{{ git_token }}@{{ git_repo }};
+      rm -rf promtail/.git
+      mv promtail /opt/
+      chown detik.detik -R /opt/promtail
+      chmod +x /opt/promtail/bin/promtail-linux-amd64
+
+  - name: Add & Start Service
+    shell: |
+      cat > /usr/lib/systemd/system/promtail.service<<EOF
+      [Unit]
+      Description=Promtail service
+      After=network.target
+
+      [Service]
+      Type=simple
+      User=detik
+      Group=detik
+      ExecStart=/opt/promtail/bin/promtail-linux-amd64 -config.file /opt/promtail/config-promtail.yaml -config.expand-env=true -client.external-labels=hostname={{ hostname }}
+
+      [Install]
+      WantedBy=multi-user.target
+      EOF
+      systemctl daemon-reload
+      systemctl enable promtail.service
+      systemctl start promtail

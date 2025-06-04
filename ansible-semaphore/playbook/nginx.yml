@@ -1,0 +1,67 @@
+---
+- name: NGINX
+  hosts: nginx
+  tasks:
+  - name: Download Module
+    shell: |
+      mkdir -p /usr/local/module-nginx/ ; cd /usr/local/module-nginx/
+      wget https://github.com/openresty/headers-more-nginx-module/archive/refs/heads/master.zip ; unzip master.zip ; mv headers-more-nginx-module-master headers-more-nginx-module ; rm -rf master.zip
+      wget https://github.com/AirisX/nginx_cookie_flag_module/archive/refs/heads/master.zip ; unzip master.zip ; mv nginx_cookie_flag_module-master nginx_cookie_flag_module ; rm -rf master.zip
+      wget https://github.com/wandenberg/nginx-push-stream-module/archive/refs/heads/master.zip ; unzip master.zip ; mv nginx-push-stream-module-master nginx-push-stream-module ; rm -rf master.zip
+      wget https://github.com/FRiCKLE/ngx_cache_purge/archive/refs/heads/master.zip ; unzip master.zip ; mv ngx_cache_purge-master ngx_cache_purge ; rm -rf master.zip
+      wget https://github.com/replay/ngx_http_lower_upper_case/archive/refs/heads/master.zip ; unzip master.zip ; mv ngx_http_lower_upper_case-master ngx_http_lower_upper_case ; rm -rf master.zip
+      wget https://github.com/leev/ngx_http_geoip2_module/archive/refs/heads/master.zip ; unzip master.zip ; mv ngx_http_geoip2_module-master ngx_http_geoip2_module ; rm -rf master.zip
+      wget https://github.com/masterzen/nginx-upload-progress-module/archive/refs/heads/master.zip ; unzip master.zip ; mv nginx-upload-progress-module-master nginx-upload-progress-module ; rm -rf master.zip
+      wget https://github.com/vozlt/nginx-module-vts/archive/refs/heads/master.zip ; unzip master.zip ; mv nginx-module-vts-master nginx-module-vts ; rm -rf master.zip
+      wget https://www.openssl.org/source/old/1.1.1/openssl-{{ openssl_version }}.tar.gz ; tar -xf openssl-{{ openssl_version }}.tar.gz ; rm -rf openssl-{{ openssl_version }}.tar.gz
+
+  - name: Download nginx and install with module
+    shell: |
+      mkdir -p /tmp/download ; cd /tmp/download
+      wget http://nginx.org/download/nginx-{{ nginx_version }}.tar.gz ; tar -xf nginx-{{ nginx_version }}.tar.gz
+      cd nginx-{{ nginx_version }}
+      if [[ "{{ nginx_version }}" < "1.22.2" ]]; then
+         ./configure --prefix=/opt/nginx --with-http_v2_module --with-http_ssl_module --with-http_stub_status_module --with-file-aio --with-threads --with-http_dav_module --with-http_realip_module --with-ld-opt=-Wl,-rpath,/usr/local/lib --with-threads --with-pcre --with-stream --with-openssl=/usr/local/module-nginx/openssl-{{ openssl_version }} --add-module=/usr/local/module-nginx/ngx_cache_purge --add-module=/usr/local/module-nginx/nginx-push-stream-module --add-module=/usr/local/module-nginx/headers-more-nginx-module --add-module=/usr/local/module-nginx/ngx_http_geoip2_module --add-module=/usr/local/module-nginx/nginx-upload-progress-module --add-module=/usr/local/module-nginx/nginx-module-vts
+      else
+         ./configure --prefix=/opt/nginx --with-http_v2_module --with-http_ssl_module --with-http_stub_status_module --with-file-aio --with-threads --with-http_dav_module --with-http_realip_module --with-ld-opt=-Wl,-rpath,/usr/local/lib --with-threads --with-pcre --with-stream --with-openssl=/usr/local/module-nginx/openssl-{{ openssl_version }} --add-module=/usr/local/module-nginx/ngx_cache_purge --add-module=/usr/local/module-nginx/nginx-push-stream-module --add-module=/usr/local/module-nginx/headers-more-nginx-module --add-module=/usr/local/module-nginx/ngx_http_geoip2_module --add-module=/usr/local/module-nginx/nginx-upload-progress-module
+      fi
+      make -j$(nproc)
+      make install
+      mkdir -p /var/log/nginx
+      chown -R detik.detik /var/log/nginx
+
+  - name: Add nginx to Supervisor
+    shell: |
+      cat > /etc/supervisord.d/nginx.ini<<EOF
+      [program:nginx]
+      command=/opt/nginx/sbin/nginx -c /opt/nginx/conf/nginx.conf
+      process_name=%(program_name)s
+      numprocs=1
+      directory=/opt/nginx/conf
+      umask=022
+      priority=1
+      autostart=true
+      autorestart=true
+      startsecs=1
+      startretries=1
+      exitcodes=0,2
+      stopsignal=TERM
+      stopwaitsecs=5
+      serverurl=AUTO
+      redirect_stderr=true
+      stdout_logfile=/var/log/supervisor/nginx.log
+      stdout_logfile_maxbytes=1MB
+      stdout_logfile_backups=10
+      stdout_capture_maxbytes=1MB
+      stopasgroup=true
+      killasgroup=true
+      stopsignal=KILL
+      EOF
+      sed -i '/Type\=forking/a LimitNOFILE\=65535' /opt/nginx/conf/nginx.conf
+      sed -i "/nobody/i user detik detik\;" /opt/nginx/conf/nginx.conf
+      sed -i "/nginx\.pid/a daemon off\;" /opt/nginx/conf/nginx.conf
+      supervisorctl update
+
+  - name: Clean config
+    shell: |
+      rm -rf /tmp/download /usr/local/module-nginx

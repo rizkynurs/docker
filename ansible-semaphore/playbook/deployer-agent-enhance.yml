@@ -1,0 +1,70 @@
+---
+# define this vars to semaphore: deployer_agent_path, gitlab_token
+- name: Deploy Deployer Agent
+  hosts: deployer
+
+  tasks:
+    - name: Ensure Deployer Agent directory exists
+      file:
+        path: "{{ deployer_agent_path }}"
+        state: directory
+
+    - name: Set up Python virtual environment
+      command: python3 -m venv "{{ deployer_agent_path }}"
+      args:
+        creates: "{{ deployer_agent_path }}/bin/activate"
+
+    - name: Clone Deployer Agent repository
+      git:
+        repo: "https://gitlab-ci-token:{{ gitlab_token }}@git-sysnet.detik.com/sysnet/grce/grce-agent.git"
+        dest: "{{ deployer_agent_path }}/apps"
+        version: "detik"
+        update: yes
+
+    - name: Install Python dependencies
+      pip:
+        requirements: "{{ deployer_agent_path }}/apps/requirement.txt"
+        virtualenv: "{{ deployer_agent_path }}"
+        virtualenv_command: "source {{ deployer_agent_path }}/bin/activate && python3 -m venv"
+
+    - name: Clone Deployer Tools repository for Protobuf setup
+      git:
+        repo: "https://gitlab-ci-token:{{ gitlab_token }}@git-sysnet.detik.com/sysnet/grce/grce-tools.git"
+        dest: /tmp/deployer-tools
+        version: "detik"
+        update: yes
+
+    - name: Run Protobuf generation
+      command: "source {{ deployer_agent_path }}/bin/activate && python3 generate.py"
+      args:
+        chdir: /tmp/deployer-tools/proto3
+
+    - name: Copy SSL certificates
+      copy:
+        src: "/tmp/deployer-tools/ssl/{{ item }}"
+        dest: "{{ deployer_agent_path }}/apps/credentials/{{ item }}"
+        owner: detik
+        group: detik
+        mode: '0644'
+      loop:
+        - server-key.pem
+        - server-cert.pem
+        - ca.pem
+
+    - name: Set up systemd service for Deployer Agent
+      copy:
+        src: "{{ deployer_agent_path }}/apps/services/systemd/deployer-agent.service"
+        dest: /usr/lib/systemd/system/deployer-agent.service
+        mode: '0644'
+
+    - name: Reload systemd and restart Deployer Agent service
+      systemd:
+        name: deployer-agent
+        daemon_reload: yes
+        state: restarted
+        enabled: yes
+
+    - name: Clean up temporary Deployer Tools directory
+      file:
+        path: /tmp/deployer-tools
+        state: absent

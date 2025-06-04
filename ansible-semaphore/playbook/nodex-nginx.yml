@@ -1,0 +1,30 @@
+---
+- name: Nginx Exporter
+  hosts: nodex-nginx
+  tasks:
+  - name: Download & Install
+    shell: |
+      mkdir -p /opt/nginx-exporter
+      mkdir -p /tmp/download ; cd /tmp/download
+      wget -q https://github.com/nginxinc/nginx-prometheus-exporter/releases/download/v{{ version }}/nginx-prometheus-exporter_{{ version }}_linux_amd64.tar.gz -O nodex-nginx.tar.gz
+      tar -xf nodex-nginx.tar.gz
+      rsync -azr nginx-prometheus-exporter /opt/ngx-exporter
+      chown -R root.root /opt/nginx-exporter
+
+  - name: Start Service
+    shell: |
+      cat > /lib/systemd/system/ngxporter.service<<EOF
+      [Unit]
+      Description=Nginx Exporter
+      [Service]
+      Type=simple
+      ExecStart=/opt/ngx-exporter/nginx-prometheus-exporter -nginx.scrape-uri=http://127.0.0.1:7777/metrics
+      [Install]
+      WantedBy=multi-user.target
+      EOF
+      systemctl enable ngxporter
+      systemctl start ngxporter
+
+  - name: Start Service
+    shell: |
+      rm -rf /tmp/download

@@ -1,0 +1,27 @@
+---
+- name: Install Composer
+  hosts: composer
+  vars:
+    composer_version: "2.1.9"  #Change with the desired version
+  
+  tasks:
+    - name: Ensure download directory exists
+      file:
+        path: /tmp/download
+        state: directory
+
+    - name: Download Composer
+      get_url:
+        url: "https://getcomposer.org/download/{{ composer_version }}/composer.phar"
+        dest: "/tmp/download/composer.phar"
+        mode: '0755'
+
+    - name: Move Composer to /usr/local/bin
+      command: mv /tmp/download/composer.phar /usr/local/bin/composer
+      args:
+        creates: /usr/local/bin/composer
+
+    - name: Clean up download directory
+      file:
+        path: /tmp/download
+        state: absent

@@ -1,0 +1,40 @@
+---
+- name: Redis Exporter
+  hosts: nodex-redis
+  tasks:
+  - name: Download & Install
+    shell: |
+      mkdir -p /tmp/download ; cd /tmp/download
+      wget -q https://github.com/oliver006/redis_exporter/releases/download/v{{ version }}/redis_exporter-v{{ version }}.linux-amd64.tar.gz -O nodex-redis.tar.gz
+      tar -xf nodex-redis.tar.gz
+      mv redis_exporter-v{{ version }}.linux-amd64 /opt/redis-exporter
+
+  - name: Start Service
+    shell: |
+      cat > /etc/supervisord.d/redis-exporter-{{ project }}.ini<<EOF
+      [program:redis-exporter-{{ project }}]
+      command=/opt/redis-exporter/redis_exporter -web.listen-address={{ ip }}:{{ port }} -redis.addr={{ ip }}:{{ port_redis }} -redis.password={{ redispass }}
+      process_name=%(program_name)s
+      numprocs=1
+      directory=/opt/redis-exporter
+      umask=022
+      priority=1
+      autostart=true
+      autorestart=true
+      startsecs=1
+      startretries=1
+      exitcodes=0,2
+      stopsignal=TERM
+      stopwaitsecs=5
+      serverurl=AUTO
+      redirect_stderr=true
+      stdout_logfile=/var/log/supervisor/redis-exporter-{{ project }}.log
+      stderr_logfile=/var/log/supervisor/redis-exporter-{{ project }}.err
+      stdout_logfile_maxbytes=1MB
+      stdout_logfile_backups=10
+      stdout_capture_maxbytes=1MB
+      EOF
+
+  - name: Start Service
+    shell: |
+      rm -rf /tmp/download

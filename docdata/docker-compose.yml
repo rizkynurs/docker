@@ -1,0 +1,81 @@
+version: '3.8'
+services:
+  centos:
+    build:
+      context: .
+    container_name: centos7
+    hostname: centes
+    restart: always
+    image: centes
+    tty: true
+    privileged: true
+    cpus: 0.50
+    mem_limit: 512M
+    #entrypoint: /bin/bash -c "rm -rf /var/run/rsyncd.pid && exec rsync --daemon"
+    networks:
+      doc_network:
+        ipv4_address: 172.21.0.3
+    ports:
+      - '8082:80'
+      - '4433:443'
+      - '2222:22'
+    volumes:
+      - /etc/hosts:/etc/hosts
+      - ./data:/data
+    command: ["rsync", "--daemon", "--no-detach"]
+
+  centest:
+    build:
+      context: .
+    container_name: centos-test
+    image: centos-tests
+    hostname: centes2
+    restart: always
+    tty: true
+    privileged: true
+    cpus: 0.50
+    mem_limit: 512M
+    #entrypoint: /bin/bash -c "rm -rf /var/run/rsyncd.pid && exec rsync --daemon"
+    networks:
+      doc_network:
+        ipv4_address: 172.21.0.4
+
+    ports:
+      - '8090:80'
+      - '4132:443'
+      - '2221:22'
+    volumes:
+      - /etc/hosts:/etc/hosts
+      - ./data-test:/data
+    command: ["rsync", "--daemon", "--no-detach"]  
+
+  jenkins:
+    build:
+      context: ../jenkins/.
+    container_name: jenkins
+    image: jentest
+    hostname: jenjen
+    restart: always
+    tty: true
+    privileged: true
+    cpus: 0.50
+    mem_limit: 1024M
+    networks:
+      doc_network:
+        ipv4_address: 172.21.0.2
+    ports:
+      - "8888:8080"
+      - "50000:50000"
+    volumes:
+      - ../jenkins/jenkins_home:/var/jenkins_home
+      # - /Users/rizky/.docker/run/docker.sock:/var/run/docker.sock  # Allows Jenkins to interact with Docker
+    environment:
+      - DOCKER_TLS_CERTDIR=/certs
+
+networks:
+  doc_network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: "172.21.0.0/24" 

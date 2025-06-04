@@ -1,0 +1,38 @@
+---
+- name: deployer-agent
+  hosts: deployer
+  tasks:
+  - name: setup python env
+    shell: |
+      python3 -m venv /opt/deployer-agent
+      cd /opt/deployer-agent
+      git clone https://gitlab-ci-token:TTgyKznV6yxy1Y3_8zFx@git-sysnet.detik.com/sysnet/grce/grce-agent.git apps -b detik
+      source /opt/deployer-agent/bin/activate
+      cd /opt/deployer-agent/apps/
+      pip3 install -r requirement.txt
+
+  - name: setup protobuf
+    shell: |
+      source /opt/deployer-agent/bin/activate
+      cd /tmp/
+      git clone https://gitlab-ci-token:TTgyKznV6yxy1Y3_8zFx@git-sysnet.detik.com/sysnet/grce/grce-tools.git deployer-tools -b detik
+      cd /tmp/deployer-tools/proto3
+      python3 generate.py
+
+  - name: copy ssl
+    shell: |
+      cp /tmp/deployer-tools/ssl/server-key.pem /opt/deployer-agent/apps/credentials/server-key.pem
+      cp /tmp/deployer-tools/ssl/server-cert.pem /opt/deployer-agent/apps/credentials/server-cert.pem
+      cp /tmp/deployer-tools/ssl/ca.pem /opt/deployer-agent/apps/credentials/ca.pem
+      chown detik. -R /opt/deployer-agent/apps/
+
+  - name: setup services systemd
+    shell: |
+      cp /opt/deployer-agent/apps/services/systemd/deployer-agent.service /usr/lib/systemd/system/deployer-agent.service
+      systemctl daemon-reload
+      systemctl restart deployer-agent
+      systemctl enable deployer-agent
+
+  - name: clean config
+    shell: |
+      rm -rf /tmp/deployer-tools

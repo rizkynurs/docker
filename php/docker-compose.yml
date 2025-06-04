@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  php:
+    build:
+      context: .
+    container_name: php82
+    hostname: php82 
+    restart: always
+    tty: true
+    privileged: true
+    ports:
+      - "9000:9000"
+    volumes:
+      - ./opt/nginx/conf:/opt/nginx/conf
+      - ../dataweb:/data/project
+      # - ./config/telegraf.conf:/etc/telegraf/telegraf.conf

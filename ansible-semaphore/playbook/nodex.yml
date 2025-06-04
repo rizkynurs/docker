@@ -1,0 +1,28 @@
+---
+- name: Node Exporter
+  hosts: nodex
+  tasks:
+  - name: Download & Install
+    shell: |
+      mkdir -p /tmp/download ; cd /tmp/download
+      wget -q https://github.com/prometheus/node_exporter/releases/download/v{{ nodex_version }}/node_exporter-{{ nodex_version }}.linux-amd64.tar.gz -O nodex.tar.gz
+      tar -xf nodex.tar.gz ; rm -rf nodex.tar.gz
+      rsync -azr node_exporter-{{ nodex_version }}.linux-amd64 /opt/node-exporter
+
+  - name: Start Service
+    shell: |
+      cat >/lib/systemd/system/nodex.service<<EOF
+      [Unit]
+      Description=Node Exporter - SystemD by sysAdmin
+      [Service]
+      Type=simple
+      ExecStart=/opt/node-exporter/node_exporter
+      [Install]
+      WantedBy=multi-user.target
+      EOF
+      systemctl enable nodex
+      systemctl start nodex
+
+  - name: Start Service
+    shell: |
+      rm -rf /tmp/download
