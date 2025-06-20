@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  haproxy:
+    build:
+      context: ./HAProxy/.
+    container_name: haproxy
+    hostname: haproxy
+    restart: always
+    tty: true
+    privileged: true
+    networks:
+      - app_network
+    ports:
+      - "80:80"
+      - "7892:7892"
+    depends_on:
+      - web1
+      #- web2
+  web1:
+    build:
+      context: ./web/.
+    container_name: web1
+    hostname: web1
+    restart: always
+    tty: true
+    privileged: true
+    networks:
+      - app_network
+    # ports:
+    #   - "8087:80"
+    #   - "4432:443"
+    volumes:
+      - ./web/opt/nginx/conf:/opt/nginx/conf
+      - ./web/data:/data/project
+
+  # web2:
+  #   build:
+  #     context: ./web/.
+  #   container_name: web2
+  #   hostname: web2
+  #   restart: always
+  #   tty: true
+  #   privileged: true
+  #   networks:
+  #     - app_network
+  #   # ports:
+  #   #   - "8087:80"
+  #   #   - "4432:443"
+  #   volumes:
+  #     - ./web/opt/nginx/conf:/opt/nginx/conf
+  #     - ./web/data:/data/project
+
+networks:
+  app_network:
+    driver: bridge
