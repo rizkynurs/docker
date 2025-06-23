@@ -40,7 +40,7 @@ Client
 
 - `haproxy/` - HAProxy configuration and Dockerfile
 - `web/opt/nginx/` - Nginx configuration and Dockerfile
-- `web/opt/php82/` - PHP application code and Dockerfile
+- `web/opt/php82/` - PHP configuration for php-fpm and php.ini
 - `docker-compose.yml` - Orchestrates all services
 
 ## Useful Commands
