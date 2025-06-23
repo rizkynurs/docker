@@ -1,6 +1,6 @@
 # Load Balancer Setup
 
-This project demonstrates a simple load-balanced web application stack using **HAProxy** as the load balancer, **Nginx** as the web server, and **PHP** for backend processing.
+This project demonstrates a simple load-balanced web application stack using **HAProxy** as the load balancer, **Nginx** as the web server, **PHP** for backend processing, and **Supervisor** for running the nginx and PHP services
 
 ## Architecture
 
@@ -39,8 +39,8 @@ Client
 ## File Structure
 
 - `haproxy/` - HAProxy configuration and Dockerfile
-- `nginx/` - Nginx configuration and Dockerfile
-- `php/` - PHP application code and Dockerfile
+- `web/opt/nginx/` - Nginx configuration and Dockerfile
+- `web/opt/php82/` - PHP application code and Dockerfile
 - `docker-compose.yml` - Orchestrates all services
 
 ## Useful Commands
